@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request,
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Candidate, Research, Project
-from app.forms import LoginForm, RegistrationForm, ResearchForm, ProjectForm
+from app.forms import LoginForm, RegistrationForm, ResearchForm, ProjectForm, SettingsForm
 import requests # We'll use this to simulate the LLM call
 
 bp = Blueprint('main', __name__)
@@ -74,6 +74,19 @@ def research_detail(research_id):
     if research.project.creator != current_user:
         abort(403)
     return render_template('research_detail.html', title='Research Details', research=research)
+
+@bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    form = SettingsForm()
+    if form.validate_on_submit():
+        current_user.settings.theme = form.theme.data
+        db.session.commit()
+        flash('Your settings have been updated.')
+        return redirect(url_for('main.settings'))
+    elif request.method == 'GET':
+        form.theme.data = current_user.settings.theme
+    return render_template('settings.html', title='Settings', form=form)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():

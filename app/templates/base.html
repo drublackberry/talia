@@ -5,13 +5,117 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <title>{% block title %}Talia{% endblock %}</title>
+    <style>
+      /* --- Light Mode (Pastel) --- */
+      body.light-mode {
+        background-color: #f8f9fa; /* Very light gray */
+        color: #212529;
+      }
+      .light-mode .navbar {
+        background-color: #ffffff !important;
+        border-bottom: 1px solid #dee2e6;
+      }
+      .light-mode .nav-link, .light-mode .navbar-brand {
+        color: #495057 !important;
+      }
+      .light-mode .card {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+      }
+      .light-mode .btn-primary {
+        background-color: #ffc0cb; /* Pastel Pink */
+        border-color: #ffc0cb;
+        color: #212529;
+      }
+      .light-mode .btn-secondary {
+        background-color: #b0e0e6; /* Pastel Blue */
+        border-color: #b0e0e6;
+        color: #212529;
+      }
+      .light-mode .btn-outline-primary {
+        color: #98fb98; /* Pastel Green */
+        border-color: #98fb98;
+      }
+      .light-mode .btn-outline-primary:hover {
+        background-color: #98fb98;
+        color: #212529;
+      }
+      .light-mode .badge-primary {
+        background-color: #ffc0cb;
+        color: #212529;
+      }
+      .light-mode .form-control {
+        background-color: #ffffff;
+        color: #495057;
+      }
+
+      /* --- Dark Mode (Vibrant) --- */
+      body.dark-mode {
+        background-color: #2c3e50; /* Grey background */
+        color: #ecf0f1;
+      }
+      .dark-mode .navbar {
+        background-color: #34495e !important;
+        border-bottom: 1px solid #4a627a;
+      }
+      .dark-mode .nav-link, .dark-mode .navbar-brand {
+        color: #ecf0f1 !important;
+      }
+      .dark-mode .card {
+        background-color: #34495e;
+        border: 1px solid #4a627a;
+      }
+      .dark-mode .btn-primary {
+        background-color: #8e44ad; /* Purple */
+        border-color: #8e44ad;
+      }
+      .dark-mode .btn-secondary {
+        background-color: #2980b9; /* Electric Blue */
+        border-color: #2980b9;
+      }
+      .dark-mode .btn-outline-primary {
+        color: #1abc9c; /* Turquoise */
+        border-color: #1abc9c;
+      }
+      .dark-mode .btn-outline-primary:hover {
+        background-color: #1abc9c;
+        color: #ffffff;
+      }
+      .dark-mode .badge-primary {
+        background-color: #8e44ad; /* Purple */
+      }
+      .dark-mode .form-control {
+        background-color: #4a627a;
+        color: #ecf0f1;
+        border-color: #6c757d;
+      }
+      .dark-mode .form-control::placeholder {
+        color: #bdc3c7;
+      }
+    </style>
   </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <body class="{{ current_user.settings.theme if current_user.is_authenticated and current_user.settings else 'light' }}-mode">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <a class="navbar-brand" href="{{ url_for('main.index') }}">Talia</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
       <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
+          </li>
+          {% if current_user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+          </li>
+          {% endif %}
+        </ul>
         <ul class="navbar-nav">
           {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.settings') }}">Settings</a>
+            </li>
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('main.logout') }}">Logout</a>
             </li>

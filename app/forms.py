@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, SelectField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, URL
 from app.models import User, Project
 
 class LoginForm(FlaskForm):
@@ -33,10 +33,9 @@ class ProjectForm(FlaskForm):
     submit = SubmitField('Create Project')
 
 class ResearchForm(FlaskForm):
-    linkedin_url = StringField('LinkedIn Profile URL', validators=[DataRequired()])
-    submit = SubmitField('Add Candidate and Research')
+    linkedin_url = StringField('Candidate LinkedIn URL', validators=[DataRequired(), URL()])
+    submit = SubmitField('Add Candidate and Perform Research')
 
-class ProjectForm(FlaskForm):
-    name = StringField('Project Name', validators=[DataRequired()])
-    master_prompt = TextAreaField('Master Prompt', validators=[DataRequired()])
-    submit = SubmitField('Create Project')
+class SettingsForm(FlaskForm):
+    theme = SelectField('Theme', choices=[('light', 'Light'), ('dark', 'Dark')], validators=[DataRequired()])
+    submit = SubmitField('Save Settings')
