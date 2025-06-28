@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Dashboard</h1>
+    <hr>
+    
+    <h3>Create New Project</h3>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.name.label }}<br>
+            {{ form.name(class_='form-control', size=32) }}
+        </div>
+        <div class="form-group">
+            {{ form.master_prompt.label }}<br>
+            {{ form.master_prompt(class_='form-control', rows=4) }}
+        </div>
+        <p>{{ form.submit(class_='btn btn-primary') }}</p>
+    </form>
+
+    <hr>
+
+    <h3>Your Projects</h3>
+    {% for project in projects %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><a href="{{ url_for('main.project', project_id=project.id) }}">{{ project.name }}</a></h5>
+                <p class="card-text">{{ project.researches.count() }} researches | {{ project.candidates.count() }} candidates</p>
+                <p class="card-text"><small class="text-muted">Created on {{ project.created_at.strftime('%Y-%m-%d') }}</small></p>
+            </div>
+        </div>
+    {% else %}
+        <p>You have no projects yet. Create one above!</p>
+    {% endfor %}
+{% endblock %}

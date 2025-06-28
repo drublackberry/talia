@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
-from app.models import User
+from app.models import User, Project
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -27,7 +27,16 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+class ProjectForm(FlaskForm):
+    name = StringField('Project Name', validators=[DataRequired()])
+    master_prompt = TextAreaField('Master Prompt', validators=[DataRequired()])
+    submit = SubmitField('Create Project')
+
 class ResearchForm(FlaskForm):
     linkedin_url = StringField('LinkedIn Profile URL', validators=[DataRequired()])
-    prompt = TextAreaField('Prompt', validators=[DataRequired()])
-    submit = SubmitField('Research')
+    submit = SubmitField('Add Candidate and Research')
+
+class ProjectForm(FlaskForm):
+    name = StringField('Project Name', validators=[DataRequired()])
+    master_prompt = TextAreaField('Master Prompt', validators=[DataRequired()])
+    submit = SubmitField('Create Project')
