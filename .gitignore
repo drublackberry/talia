@@ -7,3 +7,6 @@ venv/
 
 # Instance folder
 instance/
+
+# Migrations
+migrations/
