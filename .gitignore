@@ -3,6 +3,7 @@ __pycache__/
 
 # Environment
 venv/
+config.env
 secrets.env
 
 # Instance folder

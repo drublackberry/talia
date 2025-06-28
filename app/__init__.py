@@ -1,6 +1,6 @@
 import os
 from flask import Flask
-from app.config import Config
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -10,9 +10,21 @@ migrate = Migrate()
 login = LoginManager()
 login.login_view = 'main.login'
 
-def create_app(config_class=Config):
+from dotenv import load_dotenv
+
+def create_app():
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_object(config_class)
+
+    # Load environment variables from .env files
+    load_dotenv(os.path.join(app.instance_path, '..', 'secrets.env'))
+    load_dotenv(os.path.join(app.instance_path, '..', 'config.env'))
+
+    # Set configuration from environment variables
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() in ('true', '1', 't')
+    app.config['LLM_API_KEY'] = os.environ.get('LLM_API_KEY')
+    app.config['LLM_API_ENDPOINT'] = os.environ.get('LLM_API_ENDPOINT') or 'https://api.example.com/llm'
+    app.config['APPEND_PROMPT'] = os.environ.get('APPEND_PROMPT') or 'always add this'
 
     # ensure the instance folder exists
     try:
