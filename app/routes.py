@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
+from flask import Blueprint, render_template, flash, redirect, url_for, request, abort, current_app
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Candidate, Research, Project, Prompt
@@ -21,8 +21,12 @@ def dashboard():
     if form.validate_on_submit():
         # Create the project and the initial prompt together
         project = Project(name=form.name.data, creator=current_user)
-        initial_prompt = Prompt(text=form.master_prompt.data, project=project)
         db.session.add(project)
+        # Create an initial prompt for the project
+        prompt_text = form.master_prompt.data
+        if not current_user.settings.advanced_mode:
+            prompt_text += f" {current_app.config['APPEND_PROMPT']}"
+        initial_prompt = Prompt(text=prompt_text, project=project)
         db.session.add(initial_prompt)
         db.session.commit()
         flash('Your project has been created!')
@@ -38,7 +42,10 @@ def project(project_id):
     prompt_form = EditPromptForm()
 
     if prompt_form.submit_prompt.data and prompt_form.validate():
-        new_prompt = Prompt(text=prompt_form.text.data, project_id=project.id)
+        prompt_text = prompt_form.text.data
+        if not current_user.settings.advanced_mode:
+            prompt_text += f" {current_app.config['APPEND_PROMPT']}"
+        new_prompt = Prompt(text=prompt_text, project_id=project.id)
         db.session.add(new_prompt)
         db.session.commit()
         flash('Master prompt has been updated.')
