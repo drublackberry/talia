@@ -10,3 +10,7 @@ instance/
 
 # Migrations
 migrations/
+
+# Specific
+.vscode/
+
