@@ -3,7 +3,7 @@ __pycache__/
 
 # Environment
 venv/
-.env
+secrets.env
 
 # Instance folder
 instance/
