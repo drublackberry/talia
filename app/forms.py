@@ -37,7 +37,8 @@ class ResearchForm(FlaskForm):
     submit_research = SubmitField('Add Candidate and Perform Research')
 
 class SettingsForm(FlaskForm):
-    theme = SelectField('Theme', choices=[('light', 'Light'), ('dark', 'Dark')], validators=[DataRequired()])
+    dark_theme = BooleanField('Dark Mode')
+    advanced_mode = BooleanField('Advanced Mode')
     submit = SubmitField('Save Settings')
 
 class EditPromptForm(FlaskForm):

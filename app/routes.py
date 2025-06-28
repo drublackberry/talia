@@ -93,12 +93,14 @@ def research_detail(research_id):
 def settings():
     form = SettingsForm()
     if form.validate_on_submit():
-        current_user.settings.theme = form.theme.data
+        current_user.settings.theme = 'dark' if form.dark_theme.data else 'light'
+        current_user.settings.advanced_mode = form.advanced_mode.data
         db.session.commit()
         flash('Your settings have been updated.')
         return redirect(url_for('main.settings'))
     elif request.method == 'GET':
-        form.theme.data = current_user.settings.theme
+        form.dark_theme.data = current_user.settings.theme == 'dark'
+        form.advanced_mode.data = current_user.settings.advanced_mode
     return render_template('settings.html', title='Settings', form=form)
 
 @bp.route('/login', methods=['GET', 'POST'])

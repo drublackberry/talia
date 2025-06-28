@@ -14,7 +14,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     projects = db.relationship('Project', backref='creator', lazy='dynamic')
     researches = db.relationship('Research', backref='user', lazy='dynamic')
-    _settings = db.relationship('UserSettings', backref='user', uselist=False, cascade="all, delete-orphan")
+    _settings = db.relationship('UserSettings', back_populates='user', uselist=False, cascade="all, delete-orphan")
 
     @property
     def settings(self):
@@ -88,10 +88,13 @@ class Research(db.Model):
 
 class UserSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    theme = db.Column(db.String(10), default='light') # 'light' or 'dark'
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    theme = db.Column(db.String(10), nullable=False, default='light')
+    advanced_mode = db.Column(db.Boolean, nullable=False, default=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    user = db.relationship('User', back_populates='_settings')
 
     def __repr__(self):
+        return f'<UserSettings for User {self.user_id}>'
         return f'<UserSettings for User {self.user_id}>'
 
 class Prompt(db.Model):
