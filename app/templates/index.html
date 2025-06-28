@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+  <h2>Research a Candidate</h2>
+  <form method="POST" action="{{ url_for('main.index') }}">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.linkedin_url.label }}<br>
+      {{ form.linkedin_url(class_='form-control', placeholder='https://www.linkedin.com/in/example') }}
+    </div>
+    <div class="form-group">
+      {{ form.prompt.label }}<br>
+      {{ form.prompt(class_='form-control', rows=5, placeholder='e.g., Summarize the candidate\'s experience in software engineering.') }}
+    </div>
+    <button type="submit" class="btn btn-primary">Research</button>
+  </form>
+
+  <hr>
+
+  <h3>Previous Research</h3>
+  {% for research in researches %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">{{ research.candidate.linkedin_url }}</h5>
+        <p class="card-text"><strong>Prompt:</strong> {{ research.prompt }}</p>
+        <p class="card-text"><strong>Result:</strong> {{ research.result }}</p>
+      </div>
+    </div>
+  {% else %}
+    <p>No research has been performed yet.</p>
+  {% endfor %}
+{% endblock %}
