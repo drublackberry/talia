@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request
+from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Candidate, Research, Project
@@ -45,10 +45,16 @@ def project(project_id):
 
         # Mock LLM research
         # In a real application, you would pass research_prompt to an LLM
-        mock_result = f"This is a mock research result for {form.linkedin_url.data}."
+        # and get structured data back.
+        mock_score = 85
+        mock_summary = f"This is a concise summary for {form.linkedin_url.data}. The candidate shows strong potential."
+        mock_full_research = f"This is the full, detailed research report for {form.linkedin_url.data}. It includes an analysis of their career history, skills, and online presence."
 
         research = Research(
-            content=mock_result,
+            prompt=research_prompt,
+            overall_score=mock_score,
+            summary=mock_summary,
+            full_research=mock_full_research,
             candidate=candidate,
             user_id=current_user.id,
             project_id=project.id
@@ -58,8 +64,16 @@ def project(project_id):
         flash('Research has been completed and saved!')
         return redirect(url_for('main.project', project_id=project.id))
 
-    researches = Research.query.filter_by(project_id=project.id).order_by(Research.created_at.desc()).all()
+    researches = Research.query.filter_by(project_id=project.id).order_by(Research.overall_score.desc()).all()
     return render_template('project.html', title=project.name, project=project, form=form, researches=researches)
+
+@bp.route('/research/<int:research_id>')
+@login_required
+def research_detail(research_id):
+    research = Research.query.get_or_404(research_id)
+    if research.project.creator != current_user:
+        abort(403)
+    return render_template('research_detail.html', title='Research Details', research=research)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():

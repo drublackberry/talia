@@ -19,16 +19,17 @@
 
   <hr>
 
-  <h2>Research History</h2>
+  <h2>Top Candidates</h2>
   {% for research in researches %}
-      <div class="card mb-3">
-          <div class="card-body">
-              <h5 class="card-title">Research for: {{ research.candidate.linkedin_url }}</h5>
-              <p class="card-text">{{ research.content }}</p>
-              <p class="card-text"><small class="text-muted">Performed on {{ research.created_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
-          </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">{{ research.candidate.linkedin_url }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">Overall Score: <span class="badge badge-primary">{{ research.overall_score }}/100</span></h6>
+        <p class="card-text">{{ research.summary }}</p>
+        <a href="{{ url_for('main.research_detail', research_id=research.id) }}" class="btn btn-sm btn-outline-primary">View Full Report</a>
       </div>
+    </div>
   {% else %}
-      <p>No research has been performed for this project yet.</p>
+    <p>No candidates have been researched for this project yet.</p>
   {% endfor %}
 {% endblock %}

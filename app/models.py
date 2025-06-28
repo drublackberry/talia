@@ -62,7 +62,9 @@ class Candidate(db.Model):
 class Research(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     prompt = db.Column(db.Text)
-    result = db.Column(db.Text)
+    overall_score = db.Column(db.Integer)
+    summary = db.Column(db.Text)
+    full_research = db.Column(db.Text)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))

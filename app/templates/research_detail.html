@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Research for {{ research.candidate.linkedin_url }}</h1>
+  <p>
+    Part of project: <a href="{{ url_for('main.project', project_id=research.project.id) }}">{{ research.project.name }}</a>
+  </p>
+
+  <div class="card">
+    <div class="card-header">
+      Detailed Analysis
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">Overall Score: <span class="badge badge-primary">{{ research.overall_score }}/100</span></h5>
+      
+      <h6>Summary</h6>
+      <p class="card-text">{{ research.summary }}</p>
+      
+      <hr>
+
+      <h6>Full Research</h6>
+      <p class="card-text">{{ research.full_research }}</p>
+
+      <hr>
+
+      <h6>Prompt Used</h6>
+      <pre><code>{{ research.prompt }}</code></pre>
+    </div>
+    <div class="card-footer text-muted">
+      Performed on {{ research.created_at.strftime('%Y-%m-%d %H:%M') }}
+    </div>
+  </div>
+{% endblock %}
