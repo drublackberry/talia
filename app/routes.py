@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
-from app.models import User, Candidate, Research, Project
-from app.forms import LoginForm, RegistrationForm, ResearchForm, ProjectForm, SettingsForm
+from app.models import User, Candidate, Research, Project, Prompt
+from app.forms import LoginForm, RegistrationForm, ResearchForm, ProjectForm, SettingsForm, EditPromptForm
 import requests # We'll use this to simulate the LLM call
 
 bp = Blueprint('main', __name__)
@@ -19,8 +19,11 @@ def index():
 def dashboard():
     form = ProjectForm()
     if form.validate_on_submit():
-        project = Project(name=form.name.data, master_prompt=form.master_prompt.data, creator=current_user)
+        # Create the project and the initial prompt together
+        project = Project(name=form.name.data, creator=current_user)
+        initial_prompt = Prompt(text=form.master_prompt.data, project=project)
         db.session.add(project)
+        db.session.add(initial_prompt)
         db.session.commit()
         flash('Your project has been created!')
         return redirect(url_for('main.dashboard'))
@@ -31,27 +34,34 @@ def dashboard():
 @login_required
 def project(project_id):
     project = Project.query.get_or_404(project_id)
-    form = ResearchForm()
-    if form.validate_on_submit():
-        candidate = Candidate.query.filter_by(linkedin_url=form.linkedin_url.data).first()
+    research_form = ResearchForm()
+    prompt_form = EditPromptForm()
+
+    if prompt_form.submit_prompt.data and prompt_form.validate():
+        new_prompt = Prompt(text=prompt_form.text.data, project_id=project.id)
+        db.session.add(new_prompt)
+        db.session.commit()
+        flash('Master prompt has been updated.')
+        return redirect(url_for('main.project', project_id=project.id))
+
+    if research_form.submit_research.data and research_form.validate():
+        latest_prompt = project.prompts.first()
+        if not latest_prompt:
+            flash('Cannot perform research without a master prompt.', 'danger')
+            return redirect(url_for('main.project', project_id=project.id))
+
+        candidate = Candidate.query.filter_by(linkedin_url=research_form.linkedin_url.data).first()
         if candidate is None:
-            candidate = Candidate(linkedin_url=form.linkedin_url.data)
+            candidate = Candidate(linkedin_url=research_form.linkedin_url.data)
             db.session.add(candidate)
-            # Add candidate to project
             project.candidates.append(candidate)
 
-        # Use project's master prompt for the research
-        research_prompt = project.master_prompt
-
-        # Mock LLM research
-        # In a real application, you would pass research_prompt to an LLM
-        # and get structured data back.
         mock_score = 85
-        mock_summary = f"This is a concise summary for {form.linkedin_url.data}. The candidate shows strong potential."
-        mock_full_research = f"This is the full, detailed research report for {form.linkedin_url.data}. It includes an analysis of their career history, skills, and online presence."
+        mock_summary = f"This is a concise summary for {research_form.linkedin_url.data}. The candidate shows strong potential."
+        mock_full_research = f"This is the full, detailed research report for {research_form.linkedin_url.data}. It includes an analysis of their career history, skills, and online presence."
 
         research = Research(
-            prompt=research_prompt,
+            prompt=latest_prompt,
             overall_score=mock_score,
             summary=mock_summary,
             full_research=mock_full_research,
@@ -64,8 +74,11 @@ def project(project_id):
         flash('Research has been completed and saved!')
         return redirect(url_for('main.project', project_id=project.id))
 
+    if request.method == 'GET':
+        prompt_form.text.data = project.master_prompt
+
     researches = Research.query.filter_by(project_id=project.id).order_by(Research.overall_score.desc()).all()
-    return render_template('project.html', title=project.name, project=project, form=form, researches=researches)
+    return render_template('project.html', title=project.name, project=project, research_form=research_form, prompt_form=prompt_form, researches=researches)
 
 @bp.route('/research/<int:research_id>')
 @login_required

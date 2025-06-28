@@ -34,8 +34,12 @@ class ProjectForm(FlaskForm):
 
 class ResearchForm(FlaskForm):
     linkedin_url = StringField('Candidate LinkedIn URL', validators=[DataRequired(), URL()])
-    submit = SubmitField('Add Candidate and Perform Research')
+    submit_research = SubmitField('Add Candidate and Perform Research')
 
 class SettingsForm(FlaskForm):
     theme = SelectField('Theme', choices=[('light', 'Light'), ('dark', 'Dark')], validators=[DataRequired()])
     submit = SubmitField('Save Settings')
+
+class EditPromptForm(FlaskForm):
+    text = TextAreaField('Master Prompt', validators=[DataRequired()])
+    submit_prompt = SubmitField('Update Prompt')

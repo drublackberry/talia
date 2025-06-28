@@ -40,7 +40,6 @@ project_candidates = db.Table('project_candidates',
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True)
-    master_prompt = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     researches = db.relationship('Research', backref='project', lazy='dynamic')
     candidates = db.relationship(
@@ -49,8 +48,14 @@ class Project(db.Model):
         backref=db.backref('projects', lazy='dynamic'),
         lazy='dynamic'
     )
+    prompts = db.relationship('Prompt', backref='project', lazy='dynamic', order_by=lambda: Prompt.created_at.desc(), cascade="all, delete-orphan")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def master_prompt(self):
+        latest_prompt = self.prompts.first()
+        return latest_prompt.text if latest_prompt else "No prompt set."
 
     def __repr__(self):
         return f'<Project {self.name}>'
@@ -67,7 +72,8 @@ class Candidate(db.Model):
 
 class Research(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    prompt = db.Column(db.Text)
+    prompt_id = db.Column(db.Integer, db.ForeignKey('prompt.id'))
+    prompt = db.relationship('Prompt', backref='researches')
     overall_score = db.Column(db.Integer)
     summary = db.Column(db.Text)
     full_research = db.Column(db.Text)
@@ -87,3 +93,12 @@ class UserSettings(db.Model):
 
     def __repr__(self):
         return f'<UserSettings for User {self.user_id}>'
+
+class Prompt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Prompt {self.id} for Project {self.project_id}>'

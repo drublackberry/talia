@@ -6,16 +6,37 @@
 
   <hr>
 
-  <h2>Add Candidate</h2>
-  <p>Add a new candidate by providing their LinkedIn profile URL. The research will be conducted using the project's master prompt.</p>
-  <form action="" method="post">
-      {{ form.hidden_tag() }}
-      <div class="form-group">
-          {{ form.linkedin_url.label }}<br>
-          {{ form.linkedin_url(class_='form-control', size=64, placeholder='https://www.linkedin.com/in/example') }}
-      </div>
-      <p>{{ form.submit(class_='btn btn-primary') }}</p>
-  </form>
+  <div class="row">
+    <div class="col-md-6">
+      <h3>Add Candidate</h3>
+      <form action="" method="post" novalidate>
+        {{ research_form.hidden_tag() }}
+        <div class="form-group">
+          {{ research_form.linkedin_url.label(class="form-control-label") }}
+          {{ research_form.linkedin_url(class="form-control") }}
+        </div>
+        <div class="form-group">
+          {{ research_form.submit_research(class="btn btn-primary") }}
+        </div>
+      </form>
+    </div>
+    <div class="col-md-6">
+      <h3>Master Prompt</h3>
+      <p><em>This is the prompt that will be used for new research.</em></p>
+      <pre><code>{{ project.master_prompt }}</code></pre>
+      <hr>
+      <h4>Update Prompt</h4>
+      <form action="" method="post" novalidate>
+        {{ prompt_form.hidden_tag() }}
+        <div class="form-group">
+          {{ prompt_form.text(class="form-control", rows=4) }}
+        </div>
+        <div class="form-group">
+          {{ prompt_form.submit_prompt(class="btn btn-secondary") }}
+        </div>
+      </form>
+    </div>
+  </div>
 
   <hr>
 
@@ -26,7 +47,8 @@
         <h5 class="card-title">{{ research.candidate.linkedin_url }}</h5>
         <h6 class="card-subtitle mb-2 text-muted">Overall Score: <span class="badge badge-primary">{{ research.overall_score }}/100</span></h6>
         <p class="card-text">{{ research.summary }}</p>
-        <a href="{{ url_for('main.research_detail', research_id=research.id) }}" class="btn btn-sm btn-outline-primary">View Full Report</a>
+                <a href="{{ url_for('main.research_detail', research_id=research.id) }}" class="btn btn-sm btn-outline-primary">View Full Report</a>
+        <p class="card-text mt-2"><small class="text-muted">Prompt Version: #{{ research.prompt.id }}</small></p>
       </div>
     </div>
   {% else %}

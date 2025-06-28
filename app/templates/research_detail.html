@@ -23,8 +23,8 @@
 
       <hr>
 
-      <h6>Prompt Used</h6>
-      <pre><code>{{ research.prompt }}</code></pre>
+      <h6>Prompt Used (Version #{{ research.prompt.id }})</h6>
+      <pre><code>{{ research.prompt.text }}</code></pre>
     </div>
     <div class="card-footer text-muted">
       Performed on {{ research.created_at.strftime('%Y-%m-%d %H:%M') }}
