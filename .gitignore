@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+
+# Environment
+venv/
+.env
+
+# Instance folder
+instance/
