@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Candidate, Research, Project, Prompt
 from app.forms import LoginForm, RegistrationForm, ResearchForm, ProjectForm, SettingsForm, EditPromptForm
-import requests # We'll use this to simulate the LLM call
+from app.services import get_profile_from_linkedin_url
 
 bp = Blueprint('main', __name__)
 
@@ -63,15 +63,24 @@ def project(project_id):
             db.session.add(candidate)
             project.candidates.append(candidate)
 
-        mock_score = 85
-        mock_summary = f"This is a concise summary for {research_form.linkedin_url.data}. The candidate shows strong potential."
-        mock_full_research = f"This is the full, detailed research report for {research_form.linkedin_url.data}. It includes an analysis of their career history, skills, and online presence."
+        try:
+            # Call the Perplexity API to get the full profile
+            full_research_text = get_profile_from_linkedin_url(candidate.linkedin_url)
+
+            # For now, we'll use a placeholder for the score and a truncated summary.
+            # A future improvement could be to use another LLM call to score and summarize.
+            summary_text = (full_research_text[:200] + '...') if len(full_research_text) > 200 else full_research_text
+            score = 0  # Placeholder score
+
+        except Exception as e:
+            flash(f'An error occurred while fetching data from Perplexity: {e}', 'danger')
+            return redirect(url_for('main.project', project_id=project.id))
 
         research = Research(
             prompt=latest_prompt,
-            overall_score=mock_score,
-            summary=mock_summary,
-            full_research=mock_full_research,
+            overall_score=score,
+            summary=summary_text,
+            full_research=full_research_text,
             candidate=candidate,
             user_id=current_user.id,
             project_id=project.id
