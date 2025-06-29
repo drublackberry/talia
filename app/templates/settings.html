@@ -16,6 +16,10 @@
         {{ form.advanced_mode.label(class="custom-control-label", for="advancedModeSwitch") }}
       </div>
     </div>
+    <div class="form-group mt-3">
+        {{ form.research_model.label(class="form-label") }}
+        {{ form.research_model(class="form-select") }}
+    </div>
     <div class="form-group mt-4">
       {{ form.submit(class="btn btn-primary") }}
     </div>

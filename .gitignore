@@ -15,4 +15,5 @@ migrations/
 
 # Specific
 .vscode/
+.prompts.txt
 

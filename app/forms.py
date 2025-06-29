@@ -39,6 +39,10 @@ class ResearchForm(FlaskForm):
 class SettingsForm(FlaskForm):
     dark_theme = BooleanField('Dark Mode')
     advanced_mode = BooleanField('Advanced Mode')
+    research_model = SelectField('Research Model', choices=[
+        ('sonar-deep-research', 'Sonar Deep Research'),
+        ('sonar-pro', 'Sonar Pro')
+    ])
     submit = SubmitField('Save Settings')
 
 class EditPromptForm(FlaskForm):

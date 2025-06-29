@@ -90,6 +90,7 @@ class UserSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     theme = db.Column(db.String(10), nullable=False, default='light')
     advanced_mode = db.Column(db.Boolean, nullable=False, default=False)
+    research_model = db.Column(db.String(50), nullable=False, default='sonar-deep-research')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
     user = db.relationship('User', back_populates='_settings')
 

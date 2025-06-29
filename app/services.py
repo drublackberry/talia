@@ -2,7 +2,7 @@ import os
 from openai import OpenAI
 import httpx
 
-def get_profile_from_linkedin_url(linkedin_url: str) -> str:
+def get_profile_from_linkedin_url(linkedin_url: str, research_model: str = 'sonar-deep-research'):
     """
     Gets a user's profile from a LinkedIn URL using the Perplexity API.
 
@@ -46,15 +46,14 @@ def get_profile_from_linkedin_url(linkedin_url: str) -> str:
         },
     ]
 
+    stream = client.chat.completions.create(
+        model=research_model,
+        messages=messages,
+        stream=True,
+    )
     try:
-        response = client.chat.completions.create(
-            model="sonar-pro",
-            messages=messages,
-        )
-        if response.choices:
-            return response.choices[0].message.content
-        return "Could not retrieve profile information."
+        for chunk in stream:
+            yield chunk
     except Exception as e:
-        # For a real application, you would want more robust error handling and logging
-        print(f"An error occurred while calling the Perplexity API: {e}")
-        return "An error occurred while trying to fetch the profile."
+        print(f"An error occurred while streaming from the Perplexity API: {e}")
+        raise e

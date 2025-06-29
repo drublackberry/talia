@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, abort, current_app
+from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, stream_with_context, abort, current_app
+import json
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Candidate, Research, Project, Prompt
@@ -64,31 +65,23 @@ def project(project_id):
             project.candidates.append(candidate)
 
         try:
-            # Call the Perplexity API to get the full profile
-            full_research_text = get_profile_from_linkedin_url(candidate.linkedin_url)
-
-            # For now, we'll use a placeholder for the score and a truncated summary.
-            # A future improvement could be to use another LLM call to score and summarize.
-            summary_text = (full_research_text[:200] + '...') if len(full_research_text) > 200 else full_research_text
-            score = 0  # Placeholder score
+            # Create a placeholder research object
+            new_research = Research(
+                prompt_id=latest_prompt.id,
+                full_research="Processing...",
+                candidate_id=candidate.id,
+                user_id=current_user.id,
+                project_id=project.id
+            )
+            db.session.add(new_research)
+            db.session.commit()
+            flash('Research has started. Results will stream in below as they become available.', 'info')
+            # Redirect to a page that will display the streaming content
+            return redirect(url_for('main.research_stream', research_id=new_research.id))
 
         except Exception as e:
-            flash(f'An error occurred while fetching data from Perplexity: {e}', 'danger')
+            flash(f'An error occurred while creating the research record: {e}', 'danger')
             return redirect(url_for('main.project', project_id=project.id))
-
-        research = Research(
-            prompt=latest_prompt,
-            overall_score=score,
-            summary=summary_text,
-            full_research=full_research_text,
-            candidate=candidate,
-            user_id=current_user.id,
-            project_id=project.id
-        )
-        db.session.add(research)
-        db.session.commit()
-        flash('Research has been completed and saved!')
-        return redirect(url_for('main.project', project_id=project.id))
 
     if request.method == 'GET':
         prompt_form.text.data = project.master_prompt
@@ -104,6 +97,36 @@ def research_detail(research_id):
         abort(403)
     return render_template('research_detail.html', title='Research Details', research=research)
 
+@bp.route('/research_stream/<int:research_id>')
+@login_required
+def research_stream(research_id):
+    research = Research.query.get_or_404(research_id)
+    return render_template('research_stream.html', title='Research in Progress', research=research)
+
+@bp.route('/stream/<int:research_id>')
+@login_required
+def stream(research_id):
+    research = Research.query.get_or_404(research_id)
+
+    def generate():
+        full_response = ""
+        try:
+            for chunk in get_profile_from_linkedin_url(research.candidate.linkedin_url, research_model=current_user.settings.research_model):
+                yield f"data: {chunk.model_dump_json()}\n\n"
+                if chunk.choices and chunk.choices[0].delta.content:
+                    full_response += chunk.choices[0].delta.content
+
+            research.full_research = full_response
+            db.session.commit()
+        except Exception as e:
+            error_message = f"An error occurred: {e}"
+            research.full_research = error_message
+            db.session.commit()
+            error_payload = {"error": error_message}
+            yield f"data: {json.dumps(error_payload)}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -111,12 +134,14 @@ def settings():
     if form.validate_on_submit():
         current_user.settings.theme = 'dark' if form.dark_theme.data else 'light'
         current_user.settings.advanced_mode = form.advanced_mode.data
+        current_user.settings.research_model = form.research_model.data
         db.session.commit()
         flash('Your settings have been updated.')
         return redirect(url_for('main.settings'))
     elif request.method == 'GET':
         form.dark_theme.data = current_user.settings.theme == 'dark'
         form.advanced_mode.data = current_user.settings.advanced_mode
+        form.research_model.data = current_user.settings.research_model
     return render_template('settings.html', title='Settings', form=form)
 
 @bp.route('/login', methods=['GET', 'POST'])
