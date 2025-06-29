@@ -98,32 +98,37 @@ def research_detail(research_id):
 
 def background_research(app, research_id, linkedin_url, project_prompt, research_model):
     with app.app_context():
-        print(f"[Thread-{research_id}] Starting background research for {linkedin_url}")
+        app.logger.info(f"[Thread-{research_id}] Starting background research for {linkedin_url}")
         research = Research.query.get(research_id)
         if not research:
-            print(f"[Thread-{research_id}] Research with ID {research_id} not found.")
+            app.logger.warning(f"[Thread-{research_id}] Research with ID {research_id} not found.")
             return
 
         research.status = 'In Progress'
         db.session.commit()
-        print(f"[Thread-{research_id}] Status set to 'In Progress'.")
+        app.logger.info(f"[Thread-{research_id}] Status set to 'In Progress'.")
 
         try:
-            print(f"[Thread-{research_id}] Calling Perplexity API with model {research_model}.")
+            app.logger.info(f"[Thread-{research_id}] Calling Perplexity API with model {research_model}.")
             research_result = get_profile_from_linkedin_url(
                 linkedin_url=linkedin_url,
                 project_prompt=project_prompt,
                 research_model=research_model
             )
-            print(f"[Thread-{research_id}] Received response from Perplexity API.")
+            app.logger.info(f"[Thread-{research_id}] Received response from Perplexity API.")
             
             if research_result.strip().startswith('```json'):
                 cleaned_response = research_result.strip()[7:-3].strip()
             else:
                 cleaned_response = research_result
 
-            print(f"[Thread-{research_id}] Parsing JSON response.")
-            data = json.loads(cleaned_response)
+            try:
+                app.logger.info(f"[Thread-{research_id}] Parsing JSON response.")
+                data = json.loads(cleaned_response)
+            except json.JSONDecodeError as e:
+                app.logger.error(f"[Thread-{research_id}] Failed to decode JSON from API response: {e}")
+                app.logger.error(f"[Thread-{research_id}] Raw response received: {research_result}")
+                raise
             
             if research.candidate:
                 research.candidate.name = data.get('candidate_name')
@@ -132,16 +137,16 @@ def background_research(app, research_id, linkedin_url, project_prompt, research
             research.full_report = data.get('full_report')
             research.overall_score = data.get('overall_score')
             research.status = 'Completed'
-            print(f"[Thread-{research_id}] Research completed successfully.")
+            app.logger.info(f"[Thread-{research_id}] Research completed successfully.")
 
         except Exception as e:
-            print(f"[Thread-{research_id}] An error occurred during research: {e}")
+            app.logger.error(f"[Thread-{research_id}] An error occurred during research: {e}", exc_info=True)
             research.status = 'Failed'
             research.summary = f"An error occurred during research: {e}"
         
         finally:
             db.session.commit()
-            print(f"[Thread-{research_id}] Final status '{research.status}' committed to database.")
+            app.logger.info(f"[Thread-{research_id}] Final status '{research.status}' committed to database.")
 
 @bp.route('/delete_candidate/<int:candidate_id>', methods=['POST'])
 @login_required

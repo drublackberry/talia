@@ -47,9 +47,8 @@ def get_profile_from_linkedin_url(linkedin_url: str, project_prompt: str, resear
     ]
 
     import json
-    print("--- PROMPT SENT TO PERPLEXITY API ---")
-    print(json.dumps(messages, indent=2))
-    print("-------------------------------------")
+    current_app.logger.info("--- PROMPT SENT TO PERPLEXITY API ---")
+    current_app.logger.info(json.dumps(messages, indent=2))
 
     response = client.chat.completions.create(
         model=research_model,
