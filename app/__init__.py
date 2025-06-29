@@ -4,6 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from dotenv import load_dotenv
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -22,16 +23,12 @@ def create_app():
         # This can happen if the folder already exists, which is fine.
         pass
 
-    # Load environment variables from .env files
-    load_dotenv(os.path.join(app.instance_path, '..', 'secrets.env'))
-    load_dotenv(os.path.join(app.instance_path, '..', 'config.env'))
 
-    # Set configuration from environment variables with sensible defaults
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() in ('true', '1', 't')
-    app.config['LLM_API_KEY'] = os.environ.get('LLM_API_KEY')
-    app.config['LLM_API_ENDPOINT'] = os.environ.get('LLM_API_ENDPOINT') or 'https://api.example.com/llm'
-    app.config['APPEND_PROMPT'] = os.environ.get('APPEND_PROMPT') or 'always add this'
+
+    load_dotenv(os.path.join(app.instance_path, '..', 'secrets.env'))
+
+    from config import Config
+    app.config.from_object(Config)
 
     # Set the database URI
     # Prioritize RDS environment variables for Elastic Beanstalk
