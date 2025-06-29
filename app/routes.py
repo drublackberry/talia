@@ -73,14 +73,17 @@ def project(project_id):
         db.session.commit()
 
         # Run research in a background thread
-        thread = threading.Thread(target=run_background_research, args=(current_app._get_current_object(), research.id))
+        project_prompt = project.prompts.first().text if project.prompts.first() else ""
+        thread = threading.Thread(target=background_research, args=(current_app._get_current_object(), research.id, research_form.linkedin_url.data, project_prompt, current_user.settings.research_model))
         thread.start()
 
         flash('Research has been started in the background. The page will update once it is complete.', 'info')
         return redirect(url_for('main.project', project_id=project.id))
 
     if request.method == 'GET':
-        prompt_form.text.data = project.master_prompt
+        prompt = project.prompts.first()
+        if prompt:
+            prompt_form.text.data = prompt.text
 
     researches = Research.query.filter_by(project_id=project.id).order_by(Research.overall_score.desc()).all()
     return render_template('project.html', title=project.name, project=project, research_form=research_form, prompt_form=prompt_form, researches=researches)
@@ -93,49 +96,52 @@ def research_detail(research_id):
         abort(403)
     return render_template('research_detail.html', title='Research Details', research=research)
 
-def run_background_research(app, research_id):
+def background_research(app, research_id, linkedin_url, project_prompt, research_model):
     with app.app_context():
+        print(f"[Thread-{research_id}] Starting background research for {linkedin_url}")
         research = Research.query.get(research_id)
         if not research:
+            print(f"[Thread-{research_id}] Research with ID {research_id} not found.")
             return
 
         research.status = 'In Progress'
         db.session.commit()
+        print(f"[Thread-{research_id}] Status set to 'In Progress'.")
 
         try:
-            full_response = ""
-            stream = get_profile_from_linkedin_url(research.candidate.linkedin_url, research_model=research.user.settings.research_model)
-            for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
+            print(f"[Thread-{research_id}] Calling Perplexity API with model {research_model}.")
+            research_result = get_profile_from_linkedin_url(
+                linkedin_url=linkedin_url,
+                project_prompt=project_prompt,
+                research_model=research_model
+            )
+            print(f"[Thread-{research_id}] Received response from Perplexity API.")
             
-            # Clean the response to ensure it's valid JSON
-            # Remove markdown and any leading/trailing whitespace
-            cleaned_response = full_response.strip()
-            if cleaned_response.startswith('```json'):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.endswith('```'):
-                cleaned_response = cleaned_response[:-3]
-            cleaned_response = cleaned_response.strip()
+            if research_result.strip().startswith('```json'):
+                cleaned_response = research_result.strip()[7:-3].strip()
+            else:
+                cleaned_response = research_result
 
-            try:
-                data = json.loads(cleaned_response)
+            print(f"[Thread-{research_id}] Parsing JSON response.")
+            data = json.loads(cleaned_response)
+            
+            if research.candidate:
                 research.candidate.name = data.get('candidate_name')
-                research.overall_score = data.get('overall_score')
-                research.summary = data.get('summary')
-                research.full_research = cleaned_response # Save the raw JSON
-                research.status = 'Completed'
-            except json.JSONDecodeError as e:
-                print(f"JSON parsing failed for research ID {research.id}: {e}")
-                research.full_research = f"Failed to parse JSON response: {full_response}"
-                research.status = 'Failed'
+
+            research.summary = data.get('summary')
+            research.full_report = data.get('full_report')
+            research.overall_score = data.get('overall_score')
+            research.status = 'Completed'
+            print(f"[Thread-{research_id}] Research completed successfully.")
 
         except Exception as e:
-            print(f"Background research failed for research ID {research.id}: {e}")
-            research.full_research = f"An error occurred during research: {e}"
+            print(f"[Thread-{research_id}] An error occurred during research: {e}")
             research.status = 'Failed'
+            research.summary = f"An error occurred during research: {e}"
         
-        db.session.commit()
+        finally:
+            db.session.commit()
+            print(f"[Thread-{research_id}] Final status '{research.status}' committed to database.")
 
 @bp.route('/delete_candidate/<int:candidate_id>', methods=['POST'])
 @login_required

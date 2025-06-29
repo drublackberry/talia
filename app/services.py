@@ -3,7 +3,7 @@ from openai import OpenAI
 import httpx
 from flask import current_app
 
-def get_profile_from_linkedin_url(linkedin_url: str, research_model: str = 'sonar-deep-research'):
+def get_profile_from_linkedin_url(linkedin_url: str, project_prompt: str, research_model: str): 
     """
     Gets a user's profile from a LinkedIn URL using the Perplexity API.
 
@@ -19,7 +19,8 @@ def get_profile_from_linkedin_url(linkedin_url: str, research_model: str = 'sona
 
     # Explicitly create an httpx client to handle proxy settings correctly.
     # This will respect HTTP_PROXY and HTTPS_PROXY environment variables.
-    http_client = httpx.Client()
+    # Set a longer timeout to accommodate potentially long-running research tasks
+    http_client = httpx.Client(timeout=120.0)
 
     client = OpenAI(
         api_key=api_key, 
@@ -31,30 +32,28 @@ def get_profile_from_linkedin_url(linkedin_url: str, research_model: str = 'sona
         {
             "role": "system",
             "content": (
-                "You are an expert researcher and talent acquisition specialist. "
-                "Your task is to provide a comprehensive analysis of a candidate's LinkedIn profile and return the data in a specific JSON format. "
-                "The JSON output must contain the following fields: 'candidate_name' (string), 'overall_score' (integer between 0 and 100), and 'summary' (string). "
-                "Do not include any text outside of the JSON object."
+                "You are an expert researcher. "
+                "Provide a structured JSON response with four fields: 'candidate_name', 'overall_score', 'summary', and 'full_report'. "
+                "The 'candidate_name' should be the full name of the person. "
+                "The 'overall_score' should be an integer between 0 and 100, representing the candidate's suitability based on the project requirements. "
+                "The 'summary' should be a very concise, one or two-sentence overview of the candidate's profile. "
+                "The 'full_report' should be a detailed analysis of the candidate's profile, highlighting their skills, experience, and suitability for the role described in the project requirements."
             ),
         },
         {
             "role": "user",
-            "content": (
-                f"Please analyze the LinkedIn profile at the following URL: {linkedin_url}. "
-                "Based on their profile, generate a professional summary, determine their full name, and provide an overall score reflecting their career achievements and experience. "
-                "Return the data in the specified JSON format."
-            ),
+            "content": f"""Project Requirements:\n{project_prompt}\n\n---\n\nResearch the following LinkedIn profile:\n{linkedin_url}"""
         },
     ]
 
-    stream = client.chat.completions.create(
+    import json
+    print("--- PROMPT SENT TO PERPLEXITY API ---")
+    print(json.dumps(messages, indent=2))
+    print("-------------------------------------")
+
+    response = client.chat.completions.create(
         model=research_model,
         messages=messages,
-        stream=True,
+        stream=False
     )
-    try:
-        for chunk in stream:
-            yield chunk
-    except Exception as e:
-        print(f"An error occurred while streaming from the Perplexity API: {e}")
-        raise e
+    return response.choices[0].message.content

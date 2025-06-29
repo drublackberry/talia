@@ -78,6 +78,7 @@ class Research(db.Model):
     prompt = db.relationship('Prompt', backref='researches')
     overall_score = db.Column(db.Integer)
     summary = db.Column(db.Text)
+    full_report = db.Column(db.Text)
     full_research = db.Column(db.Text)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
