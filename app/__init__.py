@@ -4,7 +4,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from dotenv import load_dotenv
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -25,7 +24,7 @@ def create_app():
 
 
 
-    load_dotenv(os.path.join(app.instance_path, '..', 'secrets.env'))
+
 
     from config import Config
     app.config.from_object(Config)

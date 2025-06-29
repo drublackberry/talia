@@ -1,10 +1,13 @@
 import os
+from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+# Load environment variables from secrets.env
+load_dotenv(os.path.join(basedir, 'secrets.env'))
 
 class Config:
     # It's recommended to load secrets from environment variables
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-default-secret-key-that-is-not-secure'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     PERPLEXITY_API_KEY = os.environ.get('PERPLEXITY_API_KEY')
 
     # Database configuration

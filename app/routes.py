@@ -137,6 +137,26 @@ def run_background_research(app, research_id):
         
         db.session.commit()
 
+@bp.route('/delete_candidate/<int:candidate_id>', methods=['POST'])
+@login_required
+def delete_candidate(candidate_id):
+    candidate = Candidate.query.get_or_404(candidate_id)
+    project_id = request.form.get('project_id')
+    if not project_id:
+        flash('Project ID is missing.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    # Authorization check: ensure the user has rights to delete from this project
+    project = Project.query.get_or_404(project_id)
+    if project.user_id != current_user.id:
+        abort(403)
+
+    db.session.delete(candidate)
+    db.session.commit()
+    flash('Candidate and all associated research have been deleted.', 'success')
+    return redirect(url_for('main.project', project_id=project_id))
+
+
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():

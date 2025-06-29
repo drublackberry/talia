@@ -64,7 +64,7 @@ class Candidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120))
     linkedin_url = db.Column(db.String(256), index=True, unique=True)
-    researches = db.relationship('Research', backref='candidate', lazy='dynamic')
+    researches = db.relationship('Research', backref='candidate', lazy='dynamic', cascade="all, delete-orphan")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

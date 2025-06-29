@@ -60,6 +60,10 @@
             <span class="badge bg-danger">Failed</span>
           {% endif %}
         </h5>
+        <form action="{{ url_for('main.delete_candidate', candidate_id=research.candidate.id) }}" method="post" style="position: absolute; top: 1rem; right: 1rem;">
+            <input type="hidden" name="project_id" value="{{ project.id }}">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this candidate and all their research?');">Delete Candidate</button>
+        </form>
         {% if research.status == 'Completed' %}
           <h6 class="card-subtitle mb-2 text-muted">Overall Score: <span class="badge bg-primary">{{ research.overall_score }}/100</span></h6>
           <p class="card-text">{{ research.summary }}</p>
