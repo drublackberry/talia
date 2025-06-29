@@ -28,21 +28,23 @@ def get_profile_from_linkedin_url(linkedin_url: str, research_model: str = 'sona
         http_client=http_client
     )
 
-    system_prompt = (
-        "You are an expert researcher. Your task is to provide a detailed and comprehensive professional profile "
-        "based on the provided LinkedIn URL. The profile should include the person's full name, current role, "
-        "company, a summary of their experience, key skills, and education. "
-        "Present the information in a clear, well-structured format."
-    )
-
     messages = [
         {
             "role": "system",
-            "content": system_prompt,
+            "content": (
+                "You are an expert researcher and talent acquisition specialist. "
+                "Your task is to provide a comprehensive analysis of a candidate's LinkedIn profile and return the data in a specific JSON format. "
+                "The JSON output must contain the following fields: 'candidate_name' (string), 'overall_score' (integer between 0 and 100), and 'summary' (string). "
+                "Do not include any text outside of the JSON object."
+            ),
         },
         {
             "role": "user",
-            "content": f"Please generate a profile for the person at this LinkedIn URL: {linkedin_url}",
+            "content": (
+                f"Please analyze the LinkedIn profile at the following URL: {linkedin_url}. "
+                "Based on their profile, generate a professional summary, determine their full name, and provide an overall score reflecting their career achievements and experience. "
+                "Return the data in the specified JSON format."
+            ),
         },
     ]
 

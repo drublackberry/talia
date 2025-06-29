@@ -62,6 +62,7 @@ class Project(db.Model):
 
 class Candidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120))
     linkedin_url = db.Column(db.String(256), index=True, unique=True)
     researches = db.relationship('Research', backref='candidate', lazy='dynamic')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

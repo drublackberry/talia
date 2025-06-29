@@ -49,7 +49,7 @@
     <div class="card mb-3">
       <div class="card-body">
         <h5 class="card-title">
-          {{ research.candidate.linkedin_url }}
+          {{ research.candidate.name or research.candidate.linkedin_url }}
           {% if research.status == 'Completed' %}
             <span class="badge bg-success">Completed</span>
           {% elif research.status == 'In Progress' %}

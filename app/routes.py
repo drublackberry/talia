@@ -104,14 +104,32 @@ def run_background_research(app, research_id):
 
         try:
             full_response = ""
-            # Note: The service function now returns the full text, not a stream
             stream = get_profile_from_linkedin_url(research.candidate.linkedin_url, research_model=research.user.settings.research_model)
             for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
             
-            research.full_research = full_response
-            research.status = 'Completed'
+            # Clean the response to ensure it's valid JSON
+            # Remove markdown and any leading/trailing whitespace
+            cleaned_response = full_response.strip()
+            if cleaned_response.startswith('```json'):
+                cleaned_response = cleaned_response[7:]
+            if cleaned_response.endswith('```'):
+                cleaned_response = cleaned_response[:-3]
+            cleaned_response = cleaned_response.strip()
+
+            try:
+                data = json.loads(cleaned_response)
+                research.candidate.name = data.get('candidate_name')
+                research.overall_score = data.get('overall_score')
+                research.summary = data.get('summary')
+                research.full_research = cleaned_response # Save the raw JSON
+                research.status = 'Completed'
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing failed for research ID {research.id}: {e}")
+                research.full_research = f"Failed to parse JSON response: {full_response}"
+                research.status = 'Failed'
+
         except Exception as e:
             print(f"Background research failed for research ID {research.id}: {e}")
             research.full_research = f"An error occurred during research: {e}"
