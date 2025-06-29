@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, stream_with_context, abort, current_app
 import json
+import threading
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Candidate, Research, Project, Prompt
@@ -53,35 +54,30 @@ def project(project_id):
         return redirect(url_for('main.project', project_id=project.id))
 
     if research_form.submit_research.data and research_form.validate():
-        latest_prompt = project.prompts.first()
-        if not latest_prompt:
-            flash('Cannot perform research without a master prompt.', 'danger')
-            return redirect(url_for('main.project', project_id=project.id))
-
         candidate = Candidate.query.filter_by(linkedin_url=research_form.linkedin_url.data).first()
         if candidate is None:
             candidate = Candidate(linkedin_url=research_form.linkedin_url.data)
             db.session.add(candidate)
+        
+        if candidate not in project.candidates:
             project.candidates.append(candidate)
 
-        try:
-            # Create a placeholder research object
-            new_research = Research(
-                prompt_id=latest_prompt.id,
-                full_research="Processing...",
-                candidate_id=candidate.id,
-                user_id=current_user.id,
-                project_id=project.id
-            )
-            db.session.add(new_research)
-            db.session.commit()
-            flash('Research has started. Results will stream in below as they become available.', 'info')
-            # Redirect to a page that will display the streaming content
-            return redirect(url_for('main.research_stream', research_id=new_research.id))
+        research = Research(
+            candidate=candidate,
+            project=project,
+            user=current_user,
+            prompt=project.prompts.first(),
+            status='Pending'
+        )
+        db.session.add(research)
+        db.session.commit()
 
-        except Exception as e:
-            flash(f'An error occurred while creating the research record: {e}', 'danger')
-            return redirect(url_for('main.project', project_id=project.id))
+        # Run research in a background thread
+        thread = threading.Thread(target=run_background_research, args=(current_app._get_current_object(), research.id))
+        thread.start()
+
+        flash('Research has been started in the background. The page will update once it is complete.', 'info')
+        return redirect(url_for('main.project', project_id=project.id))
 
     if request.method == 'GET':
         prompt_form.text.data = project.master_prompt
@@ -97,35 +93,31 @@ def research_detail(research_id):
         abort(403)
     return render_template('research_detail.html', title='Research Details', research=research)
 
-@bp.route('/research_stream/<int:research_id>')
-@login_required
-def research_stream(research_id):
-    research = Research.query.get_or_404(research_id)
-    return render_template('research_stream.html', title='Research in Progress', research=research)
+def run_background_research(app, research_id):
+    with app.app_context():
+        research = Research.query.get(research_id)
+        if not research:
+            return
 
-@bp.route('/stream/<int:research_id>')
-@login_required
-def stream(research_id):
-    research = Research.query.get_or_404(research_id)
+        research.status = 'In Progress'
+        db.session.commit()
 
-    def generate():
-        full_response = ""
         try:
-            for chunk in get_profile_from_linkedin_url(research.candidate.linkedin_url, research_model=current_user.settings.research_model):
-                yield f"data: {chunk.model_dump_json()}\n\n"
+            full_response = ""
+            # Note: The service function now returns the full text, not a stream
+            stream = get_profile_from_linkedin_url(research.candidate.linkedin_url, research_model=research.user.settings.research_model)
+            for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
-
+            
             research.full_research = full_response
-            db.session.commit()
+            research.status = 'Completed'
         except Exception as e:
-            error_message = f"An error occurred: {e}"
-            research.full_research = error_message
-            db.session.commit()
-            error_payload = {"error": error_message}
-            yield f"data: {json.dumps(error_payload)}\n\n"
-
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+            print(f"Background research failed for research ID {research.id}: {e}")
+            research.full_research = f"An error occurred during research: {e}"
+            research.status = 'Failed'
+        
+        db.session.commit()
 
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required

@@ -72,6 +72,7 @@ class Candidate(db.Model):
 
 class Research(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    status = db.Column(db.String(20), nullable=False, default='Pending')
     prompt_id = db.Column(db.Integer, db.ForeignKey('prompt.id'))
     prompt = db.relationship('Prompt', backref='researches')
     overall_score = db.Column(db.Integer)
@@ -95,7 +96,6 @@ class UserSettings(db.Model):
     user = db.relationship('User', back_populates='_settings')
 
     def __repr__(self):
-        return f'<UserSettings for User {self.user_id}>'
         return f'<UserSettings for User {self.user_id}>'
 
 class Prompt(db.Model):
